@@ -1,6 +1,8 @@
+import { eq } from "drizzle-orm";
+import { db } from "../../common/db/index.js";
+import { userTable } from "../../common/db/schema.js";
 import ApiError from "../../common/utils/api-error.js";
 import { verifyAccessToken } from "../../common/utils/jwt.utils.js";
-import User from "./auth.model.js";
 
 // Authenticates using the short-lived access token (header or cookie)
 const authenticate = async (req, res, next) => {
@@ -13,15 +15,19 @@ const authenticate = async (req, res, next) => {
   if (!token) throw ApiError.unauthorized("Not authenticated");
 
   const decoded = verifyAccessToken(token);
-  const user = await User.findById(decoded.id);
+  //  await User.findById(decoded.id);
+  const user = await db.select().from(userTable).where(eq(userTable.id,decoded.id))[0];
+
+
   if (!user) throw ApiError.unauthorized("User no longer exists");
 
   req.user = {
-    id: user._id,
+    id: user.id,
     role: user.role,
     name: user.name,
     email: user.email,
   };
+
   next();
 };
 

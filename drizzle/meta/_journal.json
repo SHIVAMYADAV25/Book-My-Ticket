@@ -8,6 +8,13 @@
       "when": 1775992196180,
       "tag": "0000_parallel_charles_xavier",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776056526071,
+      "tag": "0001_blushing_shockwave",
+      "breakpoints": true
     }
   ]
 }

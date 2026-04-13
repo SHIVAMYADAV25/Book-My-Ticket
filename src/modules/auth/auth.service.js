@@ -16,65 +16,93 @@ import {
   sendVerificationEmail,
   sendResetPasswordEmail,
 } from "../../common/config/email.js";
+import { db } from "../../common/db/index.js";
+import { eq } from "drizzle-orm";
+import { userTable } from "../../common/db/schema.js";
 
+import { hashPassword , comparePassword } from "../../common/utils/bcrypt.utils.js";
 
 
 // Hash refresh token before storing — same approach as reset tokens
 const hashToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
+
+
+
+
 const register = async ({ name, email, password, role }) => {
-  const existing = await User.findOne({ email });
+
+  const existing = await db.select().from(userTable).where(eq(userTable.email,email))
+  
   if (existing) throw ApiError.conflict("Email already registered");
 
   const { rawToken, hashedToken } = generateResetToken();
 
-  const user = await User.create({
-    name,
-    email,
-    password,
-    role,
+  const hashPass = await hashPassword(password);
+
+  const user = await db.insert(userTable).values({
+    name : name,
+    email : email,
+    password : hashPass,
+    role : role,
     verificationToken: hashedToken,
-  });
+  }).returning();
 
   // Don't let email failure crash registration — user is already created
   try {
-    await sendVerificationEmail(email, rawToken);
+    // await sendVerificationEmail(email, rawToken);
   } catch (err) {
     console.error("Failed to send verification email:", err.message);
   }
 
-  const userObj = user.toObject();
+  console.log(user);
+
+  const userObj = user[0];
+
+  console.log(userObj);
   delete userObj.password;
   delete userObj.verificationToken;
+
+  console.log(userObj);
 
   return userObj;
 };
 
+
+
+
+
 const login = async ({ email, password }) => {
-  const user = await User.findOne({ email }).select("+password");
+
+  const user = await db.select().from(userTable).where(eq(userTable.email,email))
+
   if (!user) throw ApiError.unauthorized("Invalid email or password");
 
-  const isMatch = await user.comparePassword(password);
+  const isMatch = await comparePassword(user.password,password);
   if (!isMatch) throw ApiError.unauthorized("Invalid email or password");
 
   if (!user.isVerified) {
     throw ApiError.forbidden("Please verify your email before logging in");
   }
 
-  const accessToken = generateAccessToken({ id: user._id, role: user.role });
-  const refreshToken = generateRefreshToken({ id: user._id });
+  const accessToken = generateAccessToken({ id: user.id, role: user.role });
+  const refreshToken = generateRefreshToken({ id: user.id });
 
   // Store hashed refresh token in DB so it can be invalidated on logout
-  user.refreshToken = hashToken(refreshToken);
-  await user.save({ validateBeforeSave: false });
+  await db.insert(userTable).values({
+    refreshToken : refreshToken
+  })
 
-  const userObj = user.toObject();
+  const userObj = user[0]
   delete userObj.password;
   delete userObj.refreshToken;
 
   return { user: userObj, accessToken, refreshToken };
 };
+
+
+
 
 // Issues a new access token using a valid refresh token
 const refresh = async (token) => {
@@ -95,10 +123,16 @@ const refresh = async (token) => {
   return { accessToken };
 };
 
+
+
+
 const logout = async (userId) => {
   // Clear stored refresh token so it can't be reused
   await User.findByIdAndUpdate(userId, { refreshToken: null });
 };
+
+
+
 
 const verifyEmail = async (token) => {
   const trimmed = String(token).trim();
@@ -128,6 +162,10 @@ const verifyEmail = async (token) => {
   return user;
 };
 
+
+
+
+
 const forgotPassword = async (email) => {
   const user = await User.findOne({ email });
   if (!user) throw ApiError.notFound("No account with that email");
@@ -145,6 +183,10 @@ const forgotPassword = async (email) => {
   }
 };
 
+
+
+
+
 const resetPassword = async (token, newPassword) => {
   const hashedToken = hashToken(token);
 
@@ -161,11 +203,19 @@ const resetPassword = async (token, newPassword) => {
   await user.save();
 };
 
+
+
+
+
 const getMe = async (userId) => {
-  const user = await User.findById(userId);
+  const user =  await db.select().from(userTable).where(eq(userTable.id,userId))
   if (!user) throw ApiError.notFound("User not found");
   return user;
 };
+
+
+
+
 
 export {
   register,
