@@ -15,7 +15,7 @@ import {
   sendResetPasswordEmail,
 } from "../../common/config/email.js";
 import { db } from "../../common/db/index.js";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import { userTable } from "../../common/db/schema.js";
 
 import { hashPassword , comparePassword } from "../../common/utils/bcrypt.utils.js";
@@ -85,7 +85,7 @@ const login = async ({ email, password }) => {
   const isMatch = await comparePassword(password,user[0].password);
   if (!isMatch) throw ApiError.unauthorized("Invalid email or password");
 
-  if (!user.isVerified) {
+  if (!user[0].isVerified) {
     throw ApiError.forbidden("Please verify your email before logging in");
   }
 
@@ -157,17 +157,24 @@ const verifyEmail = async (token) => {
   if (user.length === 0) {
     user = await db.select().from(userTable).where(eq(userTable.verificationToken,trimmed))
   }
+  
   if (user.length == 0) throw ApiError.badRequest("Invalid or expired verification token");
+
+  console.log(user);
 
   const updatedUsers = await db.update(userTable).set({
     isVerified : true,
     verificationToken : null
   }).where(eq(userTable.id,user[0].id)).returning();
 
+  console.log(updatedUsers);
+
   const updatedUser = updatedUsers[0]
 
   delete updatedUser.password
   delete updatedUser.verificationToken
+
+  console.log(updatedUser);
 
   return updatedUser;
 };
@@ -182,10 +189,13 @@ const forgotPassword = async (email) => {
 
   const { rawToken, hashedToken } = generateResetToken();
 
-  db.update(userTable).set({
+  const token = await db.update(userTable).set({
     resetPasswordToken : hashedToken,
-    resetPasswordExpires : Date.now() + 15 * 60 * 1000
+    resetPasswordExpires : new Date(Date.now() + 15 * 60 * 1000)
   }).where(eq(userTable.email,email))
+
+
+  console.log(token);
 
   try {
     await sendResetPasswordEmail(email, rawToken);
@@ -199,7 +209,7 @@ const forgotPassword = async (email) => {
 
 
 const resetPassword = async (token, newPassword) => {
-  const hashedToken = hashToken(token);
+  const hashedToken =  hashToken(token);
 
 
   const users = await db.
@@ -208,27 +218,24 @@ const resetPassword = async (token, newPassword) => {
     resetPasswordToken : userTable.resetPasswordToken,
     resetPasswordExpires : userTable.resetPasswordExpires
   }).from(userTable)
-  .where(and(eq(userTable.resetPasswordToken,hashToken),
+  .where(and(eq(userTable.resetPasswordToken,hashedToken),
           gt(userTable.resetPasswordExpires,new Date())
         ));
 
+
+
   if (users.length ==  0) throw ApiError.badRequest("Invalid or expired reset token");
 
-  user.password = newPassword;
-  user.resetPasswordToken = undefined;
-  user.resetPasswordExpires = undefined;
-  await user.save();
-
+  newPassword = await hashPassword(newPassword);
 
   await db.update(userTable).set({
     password : newPassword,
     resetPasswordToken : null,
     resetPasswordExpires : null
-  }).when(eq(userTable.id,users[0].id))
+  }).where(eq(userTable.id,users[0].id))
 
   return {message : "password reset successfully"};
 };
-
 
 
 

@@ -37,6 +37,8 @@ const sendResetPasswordEmail = async (email, token) => {
   );
 };
 
+
+// ticket has been booked email
 const sendOrderConfirmationEmail = async (email, order) => {
   const items = order.items
     .map((i) => `<li>${i.title} x${i.quantity} — ₹${i.price}</li>`)
