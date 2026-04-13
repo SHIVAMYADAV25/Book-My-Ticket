@@ -3,6 +3,7 @@ import { db } from "../../common/db/index.js";
 import { userTable } from "../../common/db/schema.js";
 import ApiError from "../../common/utils/api-error.js";
 import { verifyAccessToken } from "../../common/utils/jwt.utils.js";
+// import { decode } from "jsonwebtoken";
 
 // Authenticates using the short-lived access token (header or cookie)
 const authenticate = async (req, res, next) => {
@@ -15,11 +16,20 @@ const authenticate = async (req, res, next) => {
   if (!token) throw ApiError.unauthorized("Not authenticated");
 
   const decoded = verifyAccessToken(token);
-  //  await User.findById(decoded.id);
-  const user = await db.select().from(userTable).where(eq(userTable.id,decoded.id))[0];
 
 
-  if (!user) throw ApiError.unauthorized("User no longer exists");
+  const users = await db
+    .select()
+    .from(userTable)
+    .where(eq(userTable.id, decoded.id));
+
+
+  if (users.length === 0) {
+    throw ApiError.unauthorized("User no longer exists");
+  }
+
+
+  const user = users[0];
 
   req.user = {
     id: user.id,

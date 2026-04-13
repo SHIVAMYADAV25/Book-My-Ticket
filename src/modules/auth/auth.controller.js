@@ -12,6 +12,7 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   const { user, accessToken, refreshToken } = await authService.login(req.body);
+  // console.log("contronller")
 
   // Refresh token goes in httpOnly cookie — not accessible to JS
   res.cookie("refreshToken", refreshToken, {
@@ -52,6 +53,7 @@ const resetPassword = async (req, res) => {
 };
 
 const getMe = async (req, res) => {
+  // console.log(req.user.id)
   const user = await authService.getMe(req.user.id);
   ApiResponse.ok(res, "User profile", user);
 };

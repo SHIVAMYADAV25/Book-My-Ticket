@@ -8,6 +8,7 @@ const generateAccessToken = (payload) => {
 };
 
 const verifyAccessToken = (token) => {
+  // console.log(token,process.env.JWT_ACCESS_SECRET)
   return jwt.verify(token, process.env.JWT_ACCESS_SECRET);
 };
 

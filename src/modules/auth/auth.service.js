@@ -1,7 +1,5 @@
 import crypto from "crypto";
 
-import User from "./auth.model.js";
-
 import ApiError from "../../common/utils/api-error.js";
 
 import {
@@ -23,50 +21,54 @@ import { userTable } from "../../common/db/schema.js";
 import { hashPassword , comparePassword } from "../../common/utils/bcrypt.utils.js";
 
 
+
 // Hash refresh token before storing — same approach as reset tokens
 const hashToken = (token) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
 
 
-
-
 const register = async ({ name, email, password, role }) => {
 
-  const existing = await db.select().from(userTable).where(eq(userTable.email,email))
-  
-  if (existing) throw ApiError.conflict("Email already registered");
+  const existing = await db
+    .select()
+    .from(userTable)
+    .where(eq(userTable.email, email));
+
+  if (existing.length > 0) {
+    throw ApiError.conflict("Email already registered");
+  }
+
 
   const { rawToken, hashedToken } = generateResetToken();
 
   const hashPass = await hashPassword(password);
 
-  const user = await db.insert(userTable).values({
-    name : name,
-    email : email,
-    password : hashPass,
-    role : role,
-    verificationToken: hashedToken,
-  }).returning();
+  const insertedUsers = await db
+    .insert(userTable)
+    .values({
+      name,
+      email,
+      password: hashPass,
+      role,
+      verificationToken: hashedToken,
+    })
+    .returning();
 
-  // Don't let email failure crash registration — user is already created
+  const user = insertedUsers[0];
+
+  
   try {
     // await sendVerificationEmail(email, rawToken);
   } catch (err) {
     console.error("Failed to send verification email:", err.message);
   }
 
-  console.log(user);
+  delete user.password;
+  delete user.verificationToken;
 
-  const userObj = user[0];
 
-  console.log(userObj);
-  delete userObj.password;
-  delete userObj.verificationToken;
-
-  console.log(userObj);
-
-  return userObj;
+  return user;
 };
 
 
@@ -77,22 +79,28 @@ const login = async ({ email, password }) => {
 
   const user = await db.select().from(userTable).where(eq(userTable.email,email))
 
-  if (!user) throw ApiError.unauthorized("Invalid email or password");
+  if (user.length <= 0) throw ApiError.unauthorized("Invalid email or password");
+  console.log(user);
 
-  const isMatch = await comparePassword(user.password,password);
+  const isMatch = await comparePassword(password,user[0].password);
   if (!isMatch) throw ApiError.unauthorized("Invalid email or password");
 
-  if (!user.isVerified) {
-    throw ApiError.forbidden("Please verify your email before logging in");
-  }
+  // if (!user.isVerified) {
+  //   throw ApiError.forbidden("Please verify your email before logging in");
+  // }
 
-  const accessToken = generateAccessToken({ id: user.id, role: user.role });
-  const refreshToken = generateRefreshToken({ id: user.id });
+  // console.log(user)
+
+  const accessToken = generateAccessToken({ id: user[0].id, role: user[0].role });
+  const refreshToken = generateRefreshToken({ id: user[0].id });
 
   // Store hashed refresh token in DB so it can be invalidated on logout
-  await db.insert(userTable).values({
-    refreshToken : refreshToken
+  await db
+  .update(userTable)
+  .set({
+    refreshToken: refreshToken,
   })
+  .where(eq(userTable.id, user[0].id));
 
   const userObj = user[0]
   delete userObj.password;
@@ -100,8 +108,6 @@ const login = async ({ email, password }) => {
 
   return { user: userObj, accessToken, refreshToken };
 };
-
-
 
 
 // Issues a new access token using a valid refresh token
@@ -124,14 +130,15 @@ const refresh = async (token) => {
 };
 
 
-
-
 const logout = async (userId) => {
-  // Clear stored refresh token so it can't be reused
-  await User.findByIdAndUpdate(userId, { refreshToken: null });
+  // Clear stored refresh token so it can't be reuse
+  await  db
+  .update(userTable)
+  .set({
+    refreshToken: null,
+  })
+  .where(eq(userTable.id, userId));
 };
-
-
 
 
 const verifyEmail = async (token) => {
@@ -208,13 +215,22 @@ const resetPassword = async (token, newPassword) => {
 
 
 const getMe = async (userId) => {
-  const user =  await db.select().from(userTable).where(eq(userTable.id,userId))
-  if (!user) throw ApiError.notFound("User not found");
+  const users = await db
+    .select()
+    .from(userTable)
+    .where(eq(userTable.id, userId));
+
+  if (users.length === 0) {
+    throw ApiError.notFound("User not found");
+  }
+
+  const user = users[0];
+
+  delete user.password;
+  delete user.verificationToken;
+
   return user;
 };
-
-
-
 
 
 export {

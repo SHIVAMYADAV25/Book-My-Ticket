@@ -3,11 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js",
     "studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push"
   },
   "keywords": [],
   "author": "",
@@ -21,7 +23,6 @@
     "express": "^5.2.1",
     "pg": "^8.20.0",
     "cookie-parser": "^1.4.7",
-    "dotenv": "^17.3.1",
     "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.3",
     "nodemailer": "^8.0.4"
