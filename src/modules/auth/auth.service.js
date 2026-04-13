@@ -15,7 +15,7 @@ import {
   sendResetPasswordEmail,
 } from "../../common/config/email.js";
 import { db } from "../../common/db/index.js";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { userTable } from "../../common/db/schema.js";
 
 import { hashPassword , comparePassword } from "../../common/utils/bcrypt.utils.js";
@@ -59,7 +59,7 @@ const register = async ({ name, email, password, role }) => {
 
   
   try {
-    // await sendVerificationEmail(email, rawToken);
+    await sendVerificationEmail(email, rawToken);
   } catch (err) {
     console.error("Failed to send verification email:", err.message);
   }
@@ -85,9 +85,9 @@ const login = async ({ email, password }) => {
   const isMatch = await comparePassword(password,user[0].password);
   if (!isMatch) throw ApiError.unauthorized("Invalid email or password");
 
-  // if (!user.isVerified) {
-  //   throw ApiError.forbidden("Please verify your email before logging in");
-  // }
+  if (!user.isVerified) {
+    throw ApiError.forbidden("Please verify your email before logging in");
+  }
 
   // console.log(user)
 
@@ -116,15 +116,15 @@ const refresh = async (token) => {
 
   const decoded = verifyRefreshToken(token);
 
-  const user = await User.findById(decoded.id).select("+refreshToken");
-  if (!user) throw ApiError.unauthorized("User no longer exists");
+  const user = await db.select().from(userTable).where(eq(userTable.id,decoded.id))
+  if (user.length == 0) throw ApiError.unauthorized("User no longer exists");
 
   // Verify the refresh token matches what's stored (prevents reuse of old tokens)
-  if (user.refreshToken !== hashToken(token)) {
+  if (user[0].refreshToken !== hashToken(token)) {
     throw ApiError.unauthorized("Invalid refresh token — please log in again");
   }
 
-  const accessToken = generateAccessToken({ id: user._id, role: user.role });
+  const accessToken = generateAccessToken({ id: user[0].id, role: user[0].role });
 
   return { accessToken };
 };
@@ -151,22 +151,25 @@ const verifyEmail = async (token) => {
   // If you paste the hash from MongoDB into Postman, hashing again would not match;
   // so we also try a direct match on the stored value.
   const hashedInput = hashToken(trimmed);
-  let user = await User.findOne({ verificationToken: hashedInput }).select(
-    "+verificationToken",
-  );
-  if (!user) {
-    user = await User.findOne({ verificationToken: trimmed }).select(
-      "+verificationToken",
-    );
+
+  let user = await db.select().from(userTable).where(eq(userTable.verificationToken,hashedInput))
+
+  if (user.length === 0) {
+    user = await db.select().from(userTable).where(eq(userTable.verificationToken,trimmed))
   }
-  if (!user) throw ApiError.badRequest("Invalid or expired verification token");
+  if (user.length == 0) throw ApiError.badRequest("Invalid or expired verification token");
 
-  await User.findByIdAndUpdate(user._id, {
-    $set: { isVerified: true },
-    $unset: { verificationToken: 1 },
-  });
+  const updatedUsers = await db.update(userTable).set({
+    isVerified : true,
+    verificationToken : null
+  }).where(eq(userTable.id,user[0].id)).returning();
 
-  return user;
+  const updatedUser = updatedUsers[0]
+
+  delete updatedUser.password
+  delete updatedUser.verificationToken
+
+  return updatedUser;
 };
 
 
@@ -174,14 +177,15 @@ const verifyEmail = async (token) => {
 
 
 const forgotPassword = async (email) => {
-  const user = await User.findOne({ email });
-  if (!user) throw ApiError.notFound("No account with that email");
+  const user = await db.select().from(userTable).where(eq(userTable.email,email))
+  if (user.length == 0) throw ApiError.notFound("No account with that email");
 
   const { rawToken, hashedToken } = generateResetToken();
 
-  user.resetPasswordToken = hashedToken;
-  user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
-  await user.save();
+  db.update(userTable).set({
+    resetPasswordToken : hashedToken,
+    resetPasswordExpires : Date.now() + 15 * 60 * 1000
+  }).where(eq(userTable.email,email))
 
   try {
     await sendResetPasswordEmail(email, rawToken);
@@ -197,17 +201,32 @@ const forgotPassword = async (email) => {
 const resetPassword = async (token, newPassword) => {
   const hashedToken = hashToken(token);
 
-  const user = await User.findOne({
-    resetPasswordToken: hashedToken,
-    resetPasswordExpires: { $gt: Date.now() },
-  }).select("+resetPasswordToken +resetPasswordExpires");
 
-  if (!user) throw ApiError.badRequest("Invalid or expired reset token");
+  const users = await db.
+  select({
+    id : userTable.id,
+    resetPasswordToken : userTable.resetPasswordToken,
+    resetPasswordExpires : userTable.resetPasswordExpires
+  }).from(userTable)
+  .where(and(eq(userTable.resetPasswordToken,hashToken),
+          gt(userTable.resetPasswordExpires,new Date())
+        ));
+
+  if (users.length ==  0) throw ApiError.badRequest("Invalid or expired reset token");
 
   user.password = newPassword;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpires = undefined;
   await user.save();
+
+
+  await db.update(userTable).set({
+    password : newPassword,
+    resetPasswordToken : null,
+    resetPasswordExpires : null
+  }).when(eq(userTable.id,users[0].id))
+
+  return {message : "password reset successfully"};
 };
 
 
