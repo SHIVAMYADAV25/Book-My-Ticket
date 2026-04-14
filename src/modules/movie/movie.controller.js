@@ -1,47 +1,37 @@
+import * as movieService from "./movie.service.js"
+import ApiResponse from "../../common/utils/api-response.js"
 
-import { and, eq } from "drizzle-orm";
-import {db} from "../../common/db/index.js"
-import { movieTable } from "../../common/db/schema.js";
-import ApiError from "../../common/utils/api-error.js";
+const getAllmovies = async(req,res) =>{
+    const {page = 1,limit = 10,genre,language} = req.query;
 
+    const movies = await movieService.getAllMovies({
+        page : Number(page),
+        limit : Number(limit),
+        genre,
+        language
+    });
 
-
-const getAllMovies = async( {page = 1, limit = 10, genre, language} ) => {
-    const offset = (page - 1) * limit;
-
-    let query = await db.select().from(movieTable).where(eq(movieTable.isActive,true));
-
-    const movies = await query.limit(limit).offset(offset);
-
-    return movies
+    ApiResponse.ok(res,"Movies fetched Successfully",movies);
 }
 
-const getMoviesById = async (movieId) => {
-    const movie = await db.select().from(movieTable).where(and(eq(movieTable.id,movieId),eq(movieTable.isActive,true)))
-
-    if(movie.length == 0) throw ApiError.notfound("Movie not found")
-    
-    return movie[0];
+const getMoviesById = async(req,res) =>{
+    const movie = await movieService.getMoviesById(req.params.id);
+    ApiResponse.ok(res, "Movie fetched successfully", movie);
 }
 
-const createMovie = async(data) =>{
-    const insertedMovie = await db.insert(movieTable).values(data).returning();
-
-    return insertedMovie[0];
+const createMovieById = async (req,res)=>{
+    const movie = movieService.createMovie(req.body);
+    ApiResponse.ok(res,"movie created successfully",movie)
 }
 
-const updateMovie = async(movieId,data) => {
-    const updatedMovie = db.update(movieTable).set({...data,updatedAt : new Date()}).where(eq(movieTable.id,movieId)).returning();
-
-    if(updateMovie == 0) throw ApiError.notfound("Movie not found");
-
-    return updateMovie[0]
+const deleteMovie = async (req,res) =>{
+    const movie = await movieService.deleteMovie(req.params.id,req.body);
+    ApiResponse.ok(res,"Movie Updated successfully",movie);
 }
 
-const deleteMovie = async (movieId) => {
-    // const deletedMovie = db.delete(movieTable).where(eq(movieTable.id,movieId))
-
-    // soft delete
-
-    await db.update(movieTable).set({isActive : false}).where(eq(movieTable.id , movieId));
+export {
+    getAllmovies,
+    getMoviesById,
+    createMovieById,
+    deleteMovie
 }
