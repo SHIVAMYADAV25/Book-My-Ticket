@@ -220,5 +220,6 @@ export {
     cancleBooking,
     getBookingById,
     getMyBooking,
-    getAllBooking
+    getAllBooking,
+    bookSeats
 }
