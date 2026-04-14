@@ -8,6 +8,13 @@
       "when": 1776066015406,
       "tag": "0000_misty_hiroim",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776143324802,
+      "tag": "0001_rainy_patriot",
+      "breakpoints": true
     }
   ]
 }

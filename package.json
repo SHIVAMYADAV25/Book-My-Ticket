@@ -5,10 +5,13 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "studio": "drizzle-kit studio",
+    "build": "node index.js",
+    "dev": "nodemon index.js",
+    "start": "node src/server.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "node drizzle/seed.js",
     "db:push": "drizzle-kit push"
   },
   "keywords": [],
