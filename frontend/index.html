@@ -559,7 +559,7 @@ async function doRegister() {
 
 // ─── MOVIES ───────────────────────────────────────────────────────────────────
 const GENRE_BG  = { 'Sci-Fi':'#1a1a3e','Action':'#2d1515','Horror':'#1a1a1a','Drama':'#1a2d1a','Comedy':'#2d2a10','Thriller':'#1a1030' };
-const GENRE_EMO = { 'Sci-Fi':'🚀','Action':'🔥','Horror':'👻','Drama':'📚','Comedy':'😂','Thriller':'🐺' };
+const GENRE_EMO = { 'Sci-Fi':'','Action':'','Horror':'','Drama':'','Comedy':'','Thriller':'' };
 
 async function loadMovies() {
   const grid = document.getElementById('movieGrid');
@@ -592,7 +592,7 @@ function renderMovies(movies) {
     <div class="movie-card" onclick="openBooking('${m.id}')">
       <div class="poster-placeholder" style="background:${GENRE_BG[m.genre]||'#1a1a2e'}">
         ${m.posterUrl ? `<img src="${esc(m.posterUrl)}" onerror="this.remove()" />` : ''}
-        <span style="position:relative;z-index:1">${GENRE_EMO[m.genre]||'🎬'}</span>
+        <span style="position:relative;z-index:1">${GENRE_EMO[m.genre]||''}</span>
         ${m.genre ? `<span class="movie-badge">${esc(m.genre)}</span>` : ''}
       </div>
       <div class="movie-info">

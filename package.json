@@ -5,9 +5,9 @@
   "main": "main.js",
   "type": "module",
   "scripts": {
-    "build": "node main.js",
     "dev": "nodemon main.js",
-    "start": "node src/server.js",
+    "start": "node main.js",
+    "build": "echo build complete",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
