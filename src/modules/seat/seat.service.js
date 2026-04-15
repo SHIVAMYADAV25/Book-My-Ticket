@@ -1,8 +1,8 @@
 import { and, eq } from "drizzle-orm"
-import { db } from "../../common/db"
-import { seatTable } from "../../common/db/schema"
-import ApiError from "../../common/utils/api-error"
-import { getShowById } from "../show/show.service"
+import { db } from "../../common/db/index.js"
+import { seatTable } from "../../common/db/schema.js"
+import ApiError from "../../common/utils/api-error.js"
+import { getShowById } from "../show/show.service.js"
 
 const getAvailableSeat = async(showId)=>{
 

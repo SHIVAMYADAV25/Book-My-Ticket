@@ -80,7 +80,7 @@ const login = async ({ email, password }) => {
   const user = await db.select().from(userTable).where(eq(userTable.email,email))
 
   if (user.length <= 0) throw ApiError.unauthorized("Invalid email or password");
-  console.log(user);
+  // console.log(user);
 
   const isMatch = await comparePassword(password,user[0].password);
   if (!isMatch) throw ApiError.unauthorized("Invalid email or password");
@@ -120,7 +120,7 @@ const refresh = async (token) => {
   if (user.length == 0) throw ApiError.unauthorized("User no longer exists");
 
   // Verify the refresh token matches what's stored (prevents reuse of old tokens)
-  if (user[0].refreshToken !== hashToken(token)) {
+  if (user[0].refreshToken !== token) {
     throw ApiError.unauthorized("Invalid refresh token — please log in again");
   }
 
@@ -160,21 +160,21 @@ const verifyEmail = async (token) => {
   
   if (user.length == 0) throw ApiError.badRequest("Invalid or expired verification token");
 
-  console.log(user);
+  // console.log(user);
 
   const updatedUsers = await db.update(userTable).set({
     isVerified : true,
     verificationToken : null
   }).where(eq(userTable.id,user[0].id)).returning();
 
-  console.log(updatedUsers);
+  // console.log(updatedUsers);
 
   const updatedUser = updatedUsers[0]
 
   delete updatedUser.password
   delete updatedUser.verificationToken
 
-  console.log(updatedUser);
+  // console.log(updatedUser);
 
   return updatedUser;
 };
@@ -195,7 +195,7 @@ const forgotPassword = async (email) => {
   }).where(eq(userTable.email,email))
 
 
-  console.log(token);
+  // console.log(token);
 
   try {
     await sendResetPasswordEmail(email, rawToken);
