@@ -483,13 +483,71 @@ function doLogout(notify = true) {
 }
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
-function openAuth(tab = 'login') { switchAuthTab(tab); document.getElementById('authModal').classList.add('open'); }
+<!-- Inside <script> tag - Replace the AUTH section -->
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+function openAuth(tab = 'login') { 
+  switchAuthTab(tab); 
+  document.getElementById('authModal').classList.add('open'); 
+}
+
 function switchAuthTab(tab) {
   document.getElementById('loginTab').classList.toggle('active', tab === 'login');
   document.getElementById('registerTab').classList.toggle('active', tab === 'register');
-  document.getElementById('loginForm').style.display = tab === 'login' ? '' : 'none';
-  document.getElementById('registerForm').style.display = tab === 'register' ? '' : 'none';
+
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+
+  if (tab === 'login') {
+    loginForm.style.display = '';
+    registerForm.style.display = 'none';
+  } else {
+    loginForm.style.display = 'none';
+    registerForm.style.display = 'none'; // Hide real form
+
+    // Show Demo Message instead
+    showDemoRegisterMessage();
+  }
 }
+
+function showDemoRegisterMessage() {
+  const registerForm = document.getElementById('registerForm');
+  registerForm.style.display = 'block';
+  registerForm.innerHTML = `
+    <div style="text-align:center; padding: 40px 20px; background: #fff0f3; border-radius: 16px; border: 2px dashed var(--red);">
+      <div style="font-size: 42px; margin-bottom: 16px;">🔒</div>
+      <h3 style="color: var(--red); margin-bottom: 12px; font-family: 'Nunito', sans-serif;">
+        Registration Temporarily Blocked
+      </h3>
+      <p style="color: #555; margin-bottom: 24px; line-height: 1.5;">
+        The admin has disabled new user registrations.<br>
+        Please use the demo account below:
+      </p>
+
+      <div style="background: white; padding: 20px; border-radius: 12px; text-align: left; max-width: 320px; margin: 0 auto; border: 1px solid #ffd1d9;">
+        <div style="margin-bottom: 16px;">
+          <strong style="color: #d4294a;">Email:</strong><br>
+          <code style="background:#f8f8f8; padding:4px 8px; border-radius:4px; font-size:14px;">testuser123@gmail.com</code>
+        </div>
+        <div>
+          <strong style="color: #d4294a;">Password:</strong><br>
+          <code style="background:#f8f8f8; padding:4px 8px; border-radius:4px; font-size:14px;">Test@123</code>
+        </div>
+      </div>
+
+      <button onclick="switchToLogin()" 
+              style="margin-top: 28px; background: var(--red); color: white; border: none; padding: 12px 32px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+        Go to Login →
+      </button>
+    </div>
+  `;
+}
+
+function switchToLogin() {
+  switchAuthTab('login');
+}
+
+// Keep your original doLogin() and doRegister() functions (doRegister won't be used now)
 
 function setBtnLoading(id, loading, defaultText) {
   const btn = document.getElementById(id);
