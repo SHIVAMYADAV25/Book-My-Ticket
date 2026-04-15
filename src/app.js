@@ -1,17 +1,61 @@
 import cookieParser from "cookie-parser";
 import express from "express";
+import cors from "cors";
 import authRoute from "./modules/auth/auth.routes.js";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+
+import bookingRoute from "./modules/booking/booking.routes.js"
+import movieRoute from "./modules/movie/movie.route.js"
+import seatRoute from "./modules/seat/seat.route.js";
+import showRoute from "./modules/show/show.route.js"
 
 const app = express();
-app.use(express.json());
+
+const allowedOrigin = (process.env.CORS_ORIGIN || "http://localhost:5500,http://127.0.0.1:5500,http://localhost:5173,null").split(",");
+
+app.use(cors({
+  origin:(origin,cb)=>{
+    if(!origin || allowedOrigin.includes(origin)) cb(null,true);
+    else cb(new Error("CORS: origin " + origin + " not allowed"));
+  },
+  credentials : true,
+  methods:["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+  allowedHeaders:["Content-Type","Authorization"],
+}));
+
+app.use(helmet({crossOriginResourcePolicy : {policy : "cross-origin"}}))
+
+app.use(rateLimit({windowMs : 15*60*1000,max:200,standardHeaders:true,legacyHeaders:false,
+  message : {success : false,message : "Too many request"}
+}))
+
+const authLimit = rateLimit({windowMs : 15*60*1000,max:20,
+  message: {success : false,message : "Too many auth attempts"}
+})
+
+
+
+app.use(express.json({limit : "10kb"}));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+app.get("/health",(req,res) => res.json({
+  success :true,
+  message : "Running",
+  ts : new Date().toISOString()
+}))
+
+
 app.use("/api/auth", authRoute);
+app.use("/api/v1/bookings",bookingRoute);
+app.use("/api/v1/movies",movieRoute);
+app.use("/api/v1/shows",showRoute);
+app.use("/api/v1/seats",seatRoute);
 
 // Catch-all for undefined routes
 app.all("{*path}", (req, res) => {
-  throw ApiError.notFound(`Route ${req.originalUrl} not found`);
+  res.status(404).json({success : false,message : `Route ${req.originalUrl} not found`})
 });
 
 export default app;
