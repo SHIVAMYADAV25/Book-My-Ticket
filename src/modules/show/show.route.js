@@ -7,7 +7,7 @@ import validate from "../../common/middleware/validate.middleware.js";
 const router = Router();
 
 
-router.get("/movieId/shows",showController.getShowByMovie);
+router.get("/:movieId/shows",showController.getShowByMovie);
 
 
 // Admin-Only

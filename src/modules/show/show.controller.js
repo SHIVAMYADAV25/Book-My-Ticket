@@ -1,8 +1,9 @@
-import ApiResponse from "../../common/utils/api-response";
+import ApiResponse from "../../common/utils/api-response.js";
 import * as showServices from "./show.service.js" 
 
 
 const getShowByMovie = async(req,res) =>{
+    // console.log(req.params.movieId);
     const shows = await showServices.getShowByMovie(req.params.movieId);
     ApiResponse.ok(res,"Show fetched successfully",shows);
 }

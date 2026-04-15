@@ -2,12 +2,12 @@ import { and, eq } from "drizzle-orm"
 import {db} from "../../common/db/index.js"
 import {seatTable, showTable} from "../../common/db/schema.js"
 import ApiError from "../../common/utils/api-error.js"
-import { getMoviesById } from "../movie/movie.controller.js"
+import { getMoviesById } from "../movie/movie.service.js"
 
 
 const generateSeat = async(showId,totalSeat) =>{
     const rows = 'ABCDEFGHIJ'
-    const seatPerRow = Math.ceil(totalSeat/rows);
+    const seatPerRow = Math.ceil(totalSeat/rows.length);
     const seats=[];
 
     let count = 0;
@@ -61,7 +61,8 @@ const createShow = async(data) =>{
 
     const show = insertedShow[0];
 
-    const seat =  generateSeat(show.id,totalSeats);
+    const seat = await generateSeat(show.id,totalSeats);
+    // console.log(seat)
     await db.insert(seatTable).values(seat);
 
     return show
