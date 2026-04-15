@@ -22,6 +22,14 @@ class ApiError extends Error {
   static notfound(message = "notfound") {
     return new ApiError(412, message);
   }
+
+  static unprocessable(message = "Unprocessable Entity"){
+    return new ApiError(422,message);
+  }
+
+  static internal(message = "Internal server error"){
+    return new ApiError(500,message);
+  }
 }
 
 export default ApiError;
