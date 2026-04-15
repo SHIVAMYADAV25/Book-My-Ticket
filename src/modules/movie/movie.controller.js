@@ -19,7 +19,7 @@ const getMoviesById = async(req,res) =>{
     ApiResponse.ok(res, "Movie fetched successfully", movie);
 }
 
-const createMovieById = async (req,res)=>{
+const createMovie = async (req,res)=>{
     const movie = movieService.createMovie(req.body);
     ApiResponse.ok(res,"movie created successfully",movie)
 }
@@ -29,9 +29,15 @@ const deleteMovie = async (req,res) =>{
     ApiResponse.ok(res,"Movie Updated successfully",movie);
 }
 
+const updateMovie = async(req,res) =>{
+    const movie = await movieService.updateMovie(req.params.id,req.body);
+    ApiResponse.ok(res,"Movie updated Succesffully",movie)
+}
+
 export {
     getAllmovies,
     getMoviesById,
-    createMovieById,
-    deleteMovie
+    createMovie,
+    deleteMovie,
+    updateMovie
 }

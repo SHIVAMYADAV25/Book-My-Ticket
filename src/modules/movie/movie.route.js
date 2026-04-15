@@ -36,3 +36,5 @@ router.delete(
     authorize("admin"),
     movieController.deleteMovie
 )
+
+export default router;

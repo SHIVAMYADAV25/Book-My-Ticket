@@ -9,7 +9,7 @@ import ApiError from "../../common/utils/api-error.js";
 const getAllMovies = async( {page = 1, limit = 10, genre, language} ) => {
     const offset = (page - 1) * limit;
 
-    let query = await db.select().from(movieTable).where(eq(movieTable.isActive,true));
+    let query = db.select().from(movieTable).where(eq(movieTable.isActive,true));
 
     const movies = await query.limit(limit).offset(offset);
 
@@ -18,6 +18,8 @@ const getAllMovies = async( {page = 1, limit = 10, genre, language} ) => {
 
 const getMoviesById = async (movieId) => {
     const movie = await db.select().from(movieTable).where(and(eq(movieTable.id,movieId),eq(movieTable.isActive,true)))
+
+    // console.log(movie);
 
     if(movie.length == 0) throw ApiError.notfound("Movie not found")
     
