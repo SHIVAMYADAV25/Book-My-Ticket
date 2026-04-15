@@ -47,11 +47,11 @@ app.get("/health",(req,res) => res.json({
 }))
 
 
-app.use("/api/auth", authRoute);
+app.use("/api/v1/auth", authRoute);
 app.use("/api/v1/bookings",bookingRoute);
 app.use("/api/v1/movies",movieRoute);
 app.use("/api/v1/shows",showRoute);
-app.use("/api/v1/seats",seatRoute);
+app.use("/api/v1/movies/shows",seatRoute);
 
 // Catch-all for undefined routes
 app.all("{*path}", (req, res) => {
