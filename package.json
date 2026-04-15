@@ -2,16 +2,16 @@
   "name": "booking-system",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "main.js",
   "type": "module",
   "scripts": {
-    "build": "node index.js",
-    "dev": "nodemon index.js",
+    "build": "node main.js",
+    "dev": "nodemon main.js",
     "start": "node src/server.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "node drizzle/seed.js",
+    "db:seed": "node src/common/db/seed.js",
     "db:push": "drizzle-kit push"
   },
   "keywords": [],
@@ -19,15 +19,18 @@
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
-    "pg": "^8.20.0",
-    "cookie-parser": "^1.4.7",
+    "express-rate-limit": "^8.3.2",
+    "helmet": "^8.1.0",
     "joi": "^18.0.2",
     "jsonwebtoken": "^9.0.3",
-    "nodemailer": "^8.0.4"
+    "nodemailer": "^8.0.4",
+    "pg": "^8.20.0"
   }
 }
