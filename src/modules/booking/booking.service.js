@@ -1,7 +1,7 @@
 import { and, eq, inArray } from "drizzle-orm";
-import { db } from "../../common/db";
-import { bookingTable, movieTable, seatTable, showTable, userTable } from "../../common/db/schema";
-import ApiError from "../../common/utils/api-error"
+import { db } from "../../common/db/index.js";
+import { bookingTable, movieTable, seatTable, showTable, userTable } from "../../common/db/schema.js";
+import ApiError from "../../common/utils/api-error.js"
 
 const bookSeats = async(userId,{showId , seatIds})=>{
     if(!Array.isArray(seatIds) || seatIds.length == 0){
@@ -57,25 +57,26 @@ const bookSeats = async(userId,{showId , seatIds})=>{
         .where(inArray(seatTable.id,seatIds));
 
         await tx
-        .update(show)
+        .update(showTable)
         .set({availableSeats: show.availableSeats - seatIds.length})
         .where(eq(showTable.id,showId));
 
         const bookingRecords = seatIds.map((seatId) => ({
             userId,
             showId,
+            movieId : show.movieId,
             seatId,
             status : "confirmed",
             totalAmount : show.price,
         }));
 
-        const booking = await tx
+        const bookings = await tx
         .insert(bookingTable)
         .values(bookingRecords)
         .returning();
 
         return {
-         booking,
+         bookings,
          totalAmount : show.price * seatIds.length,
          seatsBooked : seats.map((s) => s.seatNumber), 
         }
@@ -170,9 +171,9 @@ const cancleBooking = async(bookingId , userId) => {
 
         const show = shows[0];
 
-        const oneHoursBeforeNow = new Date(Date.now() * 60 * 60 * 1000);
+        const oneHoursBeforeNow   = new Date(Date.now() + 60 * 60 * 1000);
 
-        if(new Date(show.showTime) > oneHoursBeforeNow){
+        if(new Date(show.showTime) <= oneHoursBeforeNow){
             throw ApiError.badRequest("Cannot cancel booking less than 1 hour before show time");
         }
 
