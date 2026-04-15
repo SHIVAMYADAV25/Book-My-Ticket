@@ -1,0 +1,797 @@
+{
+  "info": {
+    "name": "BookMyTicket API",
+    "_postman_id": "bmt-hackathon-2026",
+    "description": "Complete API collection for the Book My Ticket hackathon project.\n\nBase URL: http://localhost:3000/api/v1\n\n## Quick Start\n1. Run the seed script: `node drizzle/seed.js`\n2. Register or login to get a token\n3. Token is auto-saved to `{{accessToken}}` variable\n4. All protected routes use `Bearer {{accessToken}}` automatically\n\n## Test Credentials (after seed)\n- Admin:  admin@bookmyticket.com / Admin@1234\n- User 1: rahul@example.com / Rahul@1234\n- User 2: priya@example.com / Priya@1234",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:3000/api/v1", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "movieId", "value": "", "type": "string" },
+    { "key": "showId", "value": "", "type": "string" },
+    { "key": "seatId", "value": "", "type": "string" },
+    { "key": "bookingId", "value": "", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "🔐 AUTH",
+      "item": [
+
+        {
+          "name": "Register — New User",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 201) {",
+            "  console.log('✅ Registered! Verify email before logging in.');",
+            "}"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Test@1234\",\n  \"role\": \"user\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": [
+            {
+              "name": "201 — Registration Successful",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Registration successful. Please verify your email.\",\n  \"data\": {\n    \"id\": \"uuid-here\",\n    \"name\": \"Test User\",\n    \"email\": \"testuser@example.com\",\n    \"role\": \"user\",\n    \"isVerified\": false,\n    \"createdAt\": \"2024-04-15T10:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Register — Admin User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin User\",\n  \"email\": \"admin2@bookmyticket.com\",\n  \"password\": \"Admin@1234\",\n  \"role\": \"admin\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "Login — Admin (saves token)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 200) {",
+            "  const json = pm.response.json();",
+            "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+            "  console.log('✅ Token saved to {{accessToken}}');",
+            "  console.log('User:', json.data.user.name, '| Role:', json.data.user.role);",
+            "}"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@bookmyticket.com\",\n  \"password\": \"Admin@1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": [
+            {
+              "name": "200 — Login Successful",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Login successful\",\n  \"data\": {\n    \"user\": {\n      \"id\": \"uuid-here\",\n      \"name\": \"Admin User\",\n      \"email\": \"admin@bookmyticket.com\",\n      \"role\": \"admin\",\n      \"isVerified\": true\n    },\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Login — Regular User (Rahul)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 200) {",
+            "  const json = pm.response.json();",
+            "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+            "  console.log('✅ Token saved for:', json.data.user.name);",
+            "}"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rahul@example.com\",\n  \"password\": \"Rahul@1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "Login — Regular User (Priya)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 200) {",
+            "  const json = pm.response.json();",
+            "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+            "  console.log('✅ Token saved for:', json.data.user.name);",
+            "}"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"priya@example.com\",\n  \"password\": \"Priya@1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "Get My Profile (protected)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{base_url}}/auth/me", "host": ["{{base_url}}"], "path": ["auth","me"] }
+          },
+          "response": [
+            {
+              "name": "200 — User Profile",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"User profile\",\n  \"data\": {\n    \"id\": \"uuid-here\",\n    \"name\": \"Rahul Sharma\",\n    \"email\": \"rahul@example.com\",\n    \"role\": \"user\",\n    \"isVerified\": true,\n    \"createdAt\": \"2024-04-15T10:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Refresh Token (uses httpOnly cookie)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/auth/refresh-token", "host": ["{{base_url}}"], "path": ["auth","refresh-token"] },
+            "body": { "mode": "raw", "raw": "" }
+          }
+        },
+
+        {
+          "name": "Logout (protected)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{base_url}}/auth/logout", "host": ["{{base_url}}"], "path": ["auth","logout"] }
+          }
+        },
+
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/forgot-password", "host": ["{{base_url}}"], "path": ["auth","forgot-password"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rahul@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "Reset Password (use token from email)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/auth/reset-password/PASTE_TOKEN_FROM_EMAIL_HERE",
+              "host": ["{{base_url}}"],
+              "path": ["auth","reset-password","PASTE_TOKEN_FROM_EMAIL_HERE"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"NewPass@1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "Verify Email (use token from email link)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/auth/verify-email/PASTE_TOKEN_FROM_EMAIL_HERE",
+              "host": ["{{base_url}}"],
+              "path": ["auth","verify-email","PASTE_TOKEN_FROM_EMAIL_HERE"]
+            }
+          }
+        },
+
+        {
+          "name": "❌ Login — Wrong Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rahul@example.com\",\n  \"password\": \"WrongPassword\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "❌ Login — Unverified User",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Test@1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "❌ Register — Duplicate Email",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Duplicate\",\n  \"email\": \"rahul@example.com\",\n  \"password\": \"Test@1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "❌ Register — Weak Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/auth/register", "host": ["{{base_url}}"], "path": ["auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Weak Pass\",\n  \"email\": \"weak@example.com\",\n  \"password\": \"1234\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🎬 MOVIES",
+      "item": [
+
+        {
+          "name": "Get All Movies",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 200) {",
+            "  const json = pm.response.json();",
+            "  if (json.data && json.data.length > 0) {",
+            "    pm.collectionVariables.set('movieId', json.data[0].id);",
+            "    console.log('✅ Saved movieId:', json.data[0].id, '—', json.data[0].title);",
+            "  }",
+            "}"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/movies?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["movies"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+
+        {
+          "name": "Get Movie by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/movies/{{movieId}}",
+              "host": ["{{base_url}}"],
+              "path": ["movies","{{movieId}}"]
+            }
+          }
+        },
+
+        {
+          "name": "Create Movie (Admin only)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 201) {",
+            "  const json = pm.response.json();",
+            "  pm.collectionVariables.set('movieId', json.data.id);",
+            "  console.log('✅ Movie created, ID saved:', json.data.id);",
+            "}"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": { "raw": "{{base_url}}/movies", "host": ["{{base_url}}"], "path": ["movies"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Singham Returns\",\n  \"description\": \"Bajirao Singham returns to face a powerful new villain in this high-octane action sequel. Rohit Shetty brings his signature cop universe to a thrilling new chapter.\",\n  \"genre\": \"Action\",\n  \"language\": \"Hindi\",\n  \"durationMinutes\": 150,\n  \"releaseDate\": \"2026-01-26T00:00:00.000Z\",\n  \"posterUrl\": \"https://image.tmdb.org/t/p/w500/sRauSFFSZFVxWK8WJhPIRcOSW4R.jpg\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "Create Movie — Sci-Fi (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": { "raw": "{{base_url}}/movies", "host": ["{{base_url}}"], "path": ["movies"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Maidaan\",\n  \"description\": \"Based on the true story of Syed Abdul Rahim, the founder of modern Indian football. A heartfelt sports drama charting India's golden era in football from 1952 to 1962.\",\n  \"genre\": \"Drama\",\n  \"language\": \"Hindi\",\n  \"durationMinutes\": 165,\n  \"releaseDate\": \"2026-02-14T00:00:00.000Z\",\n  \"posterUrl\": \"https://image.tmdb.org/t/p/w500/9FFGfMpOcfFNiGFQLjMCKqcGqkR.jpg\"\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "Update Movie (Admin only)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/movies/{{movieId}}",
+              "host": ["{{base_url}}"],
+              "path": ["movies","{{movieId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Kalki 2898 AD — Extended Cut\",\n  \"description\": \"The extended director's cut with 20 minutes of new footage.\",\n  \"durationMinutes\": 201\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "Delete Movie — Soft Delete (Admin only)",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/movies/{{movieId}}",
+              "host": ["{{base_url}}"],
+              "path": ["movies","{{movieId}}"]
+            }
+          }
+        },
+
+        {
+          "name": "❌ Create Movie — User Forbidden",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": { "raw": "{{base_url}}/movies", "host": ["{{base_url}}"], "path": ["movies"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Unauthorized Movie\",\n  \"genre\": \"Action\",\n  \"language\": \"Hindi\",\n  \"durationMinutes\": 120\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "❌ Get Movie — Invalid ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/movies/00000000-0000-0000-0000-000000000000",
+              "host": ["{{base_url}}"],
+              "path": ["movies","00000000-0000-0000-0000-000000000000"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🎭 SHOWS",
+      "item": [
+
+        {
+          "name": "Get Shows for a Movie",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 200) {",
+            "  const json = pm.response.json();",
+            "  if (json.data && json.data.length > 0) {",
+            "    pm.collectionVariables.set('showId', json.data[0].id);",
+            "    console.log('✅ Saved showId:', json.data[0].id);",
+            "    console.log('   Hall:', json.data[0].hall);",
+            "    console.log('   Price: ₹' + json.data[0].price / 100);",
+            "    console.log('   Available:', json.data[0].availableSeats, '/', json.data[0].totalSeats);",
+            "  }",
+            "}"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/movies/{{movieId}}/shows",
+              "host": ["{{base_url}}"],
+              "path": ["movies","{{movieId}}","shows"]
+            }
+          }
+        },
+
+        {
+          "name": "Create Show for Movie (Admin only)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 201) {",
+            "  const json = pm.response.json();",
+            "  pm.collectionVariables.set('showId', json.data.id);",
+            "  console.log('✅ Show created, ID saved:', json.data.id);",
+            "}"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/movies/{{movieId}}/shows",
+              "host": ["{{base_url}}"],
+              "path": ["movies","{{movieId}}","shows"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showTime\": \"2026-04-20T14:30:00.000Z\",\n  \"hall\": \"Audi 4 — Dolby Atmos\",\n  \"totalSeats\": 90,\n  \"price\": 40000\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "Create Show — IMAX Premium (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/movies/{{movieId}}/shows",
+              "host": ["{{base_url}}"],
+              "path": ["movies","{{movieId}}","shows"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showTime\": \"2026-04-21T18:00:00.000Z\",\n  \"hall\": \"Audi 5 — IMAX Laser\",\n  \"totalSeats\": 150,\n  \"price\": 65000\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "Create Show — Late Night (Admin only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/movies/{{movieId}}/shows",
+              "host": ["{{base_url}}"],
+              "path": ["movies","{{movieId}}","shows"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showTime\": \"2026-04-22T23:00:00.000Z\",\n  \"hall\": \"Audi 6 — Standard\",\n  \"totalSeats\": 100,\n  \"price\": 20000\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "❌ Create Show — Past Date",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/movies/{{movieId}}/shows",
+              "host": ["{{base_url}}"],
+              "path": ["movies","{{movieId}}","shows"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showTime\": \"2020-01-01T10:00:00.000Z\",\n  \"hall\": \"Audi 1\",\n  \"totalSeats\": 100,\n  \"price\": 25000\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "💺 SEATS",
+      "item": [
+
+        {
+          "name": "Get All Seats for a Show",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 200) {",
+            "  const json = pm.response.json();",
+            "  const available = json.data.filter(s => !s.isBooked);",
+            "  if (available.length > 0) {",
+            "    pm.collectionVariables.set('seatId', available[0].id);",
+            "    console.log('✅ Saved seatId (first available):', available[0].id, '—', available[0].seatNumber);",
+            "    console.log('   Total seats:', json.data.length);",
+            "    console.log('   Available:', available.length);",
+            "    console.log('   Booked:', json.data.length - available.length);",
+            "  }",
+            "}"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/movies/shows/{{showId}}/seats",
+              "host": ["{{base_url}}"],
+              "path": ["movies","shows","{{showId}}","seats"]
+            }
+          }
+        },
+
+        {
+          "name": "Get Available Seats Only",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 200) {",
+            "  const json = pm.response.json();",
+            "  console.log('Available seats:', json.data.length);",
+            "  if (json.data.length >= 2) {",
+            "    const ids = json.data.slice(0, 3).map(s => s.id);",
+            "    console.log('First 3 seat IDs for booking:', ids);",
+            "  }",
+            "}"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/movies/shows/{{showId}}/seats/available",
+              "host": ["{{base_url}}"],
+              "path": ["movies","shows","{{showId}}","seats","available"]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🎟️ BOOKINGS",
+      "item": [
+
+        {
+          "name": "Book 1 Seat (protected)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "if (pm.response.code === 201) {",
+            "  const json = pm.response.json();",
+            "  pm.collectionVariables.set('bookingId', json.data.bookings[0].id);",
+            "  console.log('✅ Booking created!');",
+            "  console.log('   Booking ID:', json.data.bookings[0].id);",
+            "  console.log('   Seats booked:', json.data.seatsBooked);",
+            "  console.log('   Total amount: ₹' + json.data.totalAmount / 100);",
+            "}"
+          ], "type": "text/javascript" }}],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": { "raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showId\": \"{{showId}}\",\n  \"seatIds\": [\"{{seatId}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          },
+          "response": [
+            {
+              "name": "201 — Booking Confirmed",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Seats booked successfully\",\n  \"data\": {\n    \"bookings\": [\n      {\n        \"id\": \"booking-uuid\",\n        \"userId\": \"user-uuid\",\n        \"showId\": \"show-uuid\",\n        \"seatId\": \"seat-uuid\",\n        \"status\": \"confirmed\",\n        \"totalAmount\": 45000\n      }\n    ],\n    \"totalAmount\": 45000,\n    \"seatsBooked\": [\"A1\"]\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Book Multiple Seats (3 seats)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": { "raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showId\": \"PASTE_SHOW_ID_HERE\",\n  \"seatIds\": [\n    \"PASTE_SEAT_ID_1_HERE\",\n    \"PASTE_SEAT_ID_2_HERE\",\n    \"PASTE_SEAT_ID_3_HERE\"\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "Get My Bookings (protected)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": { "raw": "{{base_url}}/bookings/my", "host": ["{{base_url}}"], "path": ["bookings","my"] }
+          },
+          "response": [
+            {
+              "name": "200 — My Bookings",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true,\n  \"message\": \"Bookings fetched successfully\",\n  \"data\": [\n    {\n      \"bookingId\": \"uuid\",\n      \"status\": \"confirmed\",\n      \"totalAmount\": 45000,\n      \"seatNumber\": \"A3\",\n      \"showTime\": \"2026-04-15T10:00:00.000Z\",\n      \"hall\": \"Audi 1 — 4DX\",\n      \"movieTitle\": \"Kalki 2898 AD\",\n      \"movieGenre\": \"Sci-Fi\",\n      \"movieLanguage\": \"Hindi\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Get Booking by ID (protected)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/bookings/{{bookingId}}",
+              "host": ["{{base_url}}"],
+              "path": ["bookings","{{bookingId}}"]
+            }
+          }
+        },
+
+        {
+          "name": "Cancel Booking (protected)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/bookings/{{bookingId}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["bookings","{{bookingId}}","cancel"]
+            }
+          }
+        },
+
+        {
+          "name": "Get All Bookings (Admin only)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": {
+              "raw": "{{base_url}}/bookings?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["bookings"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" }
+              ]
+            }
+          }
+        },
+
+        {
+          "name": "❌ Book Already-Booked Seat",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": { "raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showId\": \"{{showId}}\",\n  \"seatIds\": [\"{{seatId}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "❌ Book Seat — No Auth",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showId\": \"{{showId}}\",\n  \"seatIds\": [\"{{seatId}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "❌ Book 11 Seats — Exceeds Limit",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": { "raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showId\": \"{{showId}}\",\n  \"seatIds\": [\n    \"id1\", \"id2\", \"id3\", \"id4\", \"id5\",\n    \"id6\", \"id7\", \"id8\", \"id9\", \"id10\", \"id11\"\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        },
+
+        {
+          "name": "❌ Book Seat — Empty seatIds",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+            ],
+            "url": { "raw": "{{base_url}}/bookings", "host": ["{{base_url}}"], "path": ["bookings"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showId\": \"{{showId}}\",\n  \"seatIds\": []\n}",
+              "options": { "raw": { "language": "json" } }
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "⚙️ SERVER",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "http://localhost:3000/health", "host": ["http://localhost:3000"], "path": ["health"] }
+          }
+        },
+        {
+          "name": "404 — Unknown Route",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/doesnotexist", "host": ["{{base_url}}"], "path": ["doesnotexist"] }
+          }
+        }
+      ]
+    }
+  ]
+}
