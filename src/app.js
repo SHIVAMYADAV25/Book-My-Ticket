@@ -34,11 +34,11 @@ const authLimit = rateLimit({windowMs : 15*60*1000,max:20,
   message: {success : false,message : "Too many auth attempts"}
 })
 
-
-
 app.use(express.json({limit : "10kb"}));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+app.use("/api/v1/auth", authLimit);
 
 app.get("/health",(req,res) => res.json({
   success :true,
@@ -54,8 +54,25 @@ app.use("/api/v1/shows",showRoute);
 app.use("/api/v1/movies/shows",seatRoute);
 
 // Catch-all for undefined routes
-app.all("{*path}", (req, res) => {
+app.all("*", (req, res) => {
   res.status(404).json({success : false,message : `Route ${req.originalUrl} not found`})
+});
+
+// app.js (LAST middleware)
+app.use((err, req, res, next) => {
+  console.error(err);
+
+  if (err instanceof ApiError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+    });
+  }
+
+  return res.status(500).json({
+    success: false,
+    message: "Internal Server Error",
+  });
 });
 
 export default app;

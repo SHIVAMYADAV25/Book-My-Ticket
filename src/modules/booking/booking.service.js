@@ -22,6 +22,10 @@ const bookSeats = async(userId,{showId , seatIds})=>{
 
         const show = shows[0];
 
+        if (!show) {
+            throw ApiError.notFound("Show not found");
+        }
+
         if(new Date(show.showTime) < new Date()){
             throw ApiError.badRequest("Cannot book seats for a past show")
         }
@@ -35,16 +39,22 @@ const bookSeats = async(userId,{showId , seatIds})=>{
 
         // Validate all seatIds belong to this show
         if(seats.length !== seatIds.length){
-            throw ApiError.badRequest("One or More seats IDs are invalid for this shoq")
+            throw ApiError.badRequest("One or More seats IDs are invalid for this show")
         }
 
-        const alreadyBooked = seats.filter((s) => s.isBooked);
-
-        if(alreadyBooked.length > 0){
-            const bookedNums = alreadyBooked.map((s) => s.seatNumber).join(", ");
-            throw ApiError.conflict(
-                `seat(s) ${bookedNums} are already booked. please choose differnet seats`
+        const updated = await tx
+        .update(seatTable)
+        .set({ isBooked: true })
+        .where(
+            and(
+            inArray(seatTable.id, seatIds),
+            eq(seatTable.isBooked, false)
             )
+        )
+        .returning();
+
+        if (updated.length !== seatIds.length) {
+        throw ApiError.conflict("Some seats already booked");
         }
 
         if(show.availableSeats < seatIds.length){
@@ -67,7 +77,7 @@ const bookSeats = async(userId,{showId , seatIds})=>{
             movieId : show.movieId,
             seatId,
             status : "confirmed",
-            totalAmount : show.price,
+            totalAmount : show.price * seatIds.length,
         }));
 
         const bookings = await tx
@@ -81,7 +91,6 @@ const bookSeats = async(userId,{showId , seatIds})=>{
          seatsBooked : seats.map((s) => s.seatNumber), 
         }
     })
-
     return result
 }
 
@@ -162,6 +171,10 @@ const cancleBooking = async(bookingId , userId) => {
         }
 
         const booking = bookings[0];
+
+        if (booking.userId !== userId) {
+            throw ApiError.forbidden("You cannot cancel this booking");
+        }
 
         if(booking.status == "cancelled"){
             throw ApiError.badRequest("Booking already cancelled");

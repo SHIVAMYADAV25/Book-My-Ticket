@@ -94,11 +94,13 @@ const login = async ({ email, password }) => {
   const accessToken = generateAccessToken({ id: user[0].id, role: user[0].role });
   const refreshToken = generateRefreshToken({ id: user[0].id });
 
+  const hashedToken = hashToken(refreshToken)
+
   // Store hashed refresh token in DB so it can be invalidated on logout
   await db
   .update(userTable)
   .set({
-    refreshToken: refreshToken,
+    refreshToken: hashedToken,
   })
   .where(eq(userTable.id, user[0].id));
 
@@ -120,7 +122,10 @@ const refresh = async (token) => {
   if (user.length == 0) throw ApiError.unauthorized("User no longer exists");
 
   // Verify the refresh token matches what's stored (prevents reuse of old tokens)
-  if (user[0].refreshToken !== token) {
+
+  const hashedIncoming = hashToken(token);
+
+  if (user[0].refreshToken !== hashedIncoming) {
     throw ApiError.unauthorized("Invalid refresh token — please log in again");
   }
 
@@ -185,7 +190,7 @@ const verifyEmail = async (token) => {
 
 const forgotPassword = async (email) => {
   const user = await db.select().from(userTable).where(eq(userTable.email,email))
-  if (user.length == 0) throw ApiError.notFound("No account with that email");
+  if (user.length == 0) throw ApiError.notfound("No account with that email");
 
   const { rawToken, hashedToken } = generateResetToken();
 
@@ -247,7 +252,7 @@ const getMe = async (userId) => {
     .where(eq(userTable.id, userId));
 
   if (users.length === 0) {
-    throw ApiError.notFound("User not found");
+    throw ApiError.notfound("User not found");
   }
 
   const user = users[0];

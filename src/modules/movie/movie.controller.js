@@ -20,7 +20,7 @@ const getMoviesById = async(req,res) =>{
 }
 
 const createMovie = async (req,res)=>{
-    const movie = movieService.createMovie(req.body);
+    const movie =await movieService.createMovie(req.body);
     ApiResponse.ok(res,"movie created successfully",movie)
 }
 
